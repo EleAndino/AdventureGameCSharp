@@ -19,8 +19,8 @@ public static class DungeonLoader
 		int keyCol = int.Parse(lines[7]);
 		int chestRow = int.Parse(lines[8]);
 		int chestCol = int.Parse(lines[9]);
-
-		// lines[10] and lines[11] are grueRow/grueCol if needed elsewhere
+		int grueRow = int.Parse(lines[10]);
+		int grueCol = int.Parse(lines[11]);
 
 		int layoutStart = 12;
 		int descriptionsStart = layoutStart + rows;
