@@ -79,6 +79,12 @@ public class AdventureGame
 		aRow = 0;
 		aCol = 1;
 
+		//Code used to test Grue Pathfinding, skips to chest opening
+		/*aRow = chestRow;
+		aCol = chestCol;
+		adventurer.SetLamp(true);
+		adventurer.SetKey(true);*/
+
 		isChestOpen = false;
 		hasPlayerQuit = false;
 		hasAdventurerDied = false;
@@ -182,7 +188,7 @@ public class AdventureGame
 		{
 			List<(int row, int col)> path = FindPathToAdventurer();
 
-			Console.Write(string.Join(" ", path));
+			Console.Write(string.Join(" ", path) + "\n");
 
 			grueRow = path[1].row;
 			grueCol = path[1].col;
@@ -302,7 +308,7 @@ public class AdventureGame
 		{
 			if(adventurer.HasKey())
 			{
-				Console.WriteLine("You got the treasure!");
+				Console.WriteLine("You got the treasure! But you hear a door smashing open in the distance...");
 				isChestOpen = true;
 			}
 			else
@@ -321,7 +327,7 @@ public class AdventureGame
 		hasPlayerQuit = true;
 	}
 
-	private List<(int, int)> GetAdjacents(int row, int col)
+	private List<(int row, int col)> GetAdjacents(int row, int col)
 	{
 		var adjs = new List<(int, int)>();
 
@@ -340,57 +346,38 @@ public class AdventureGame
 		var start = (row: grueRow, col: grueCol);
 		var goal = (row: aRow, col: aCol);
 
-        Hashtable path = new Hashtable();
+		var cameFrom = new Dictionary<(int row, int col), (int row, int col)>();
+		var gCost = new Dictionary<(int row, int col), int>();
+        var open = new PriorityQueue<(int row, int col), int>();
 
-        Hashtable gCost = new Hashtable();
+        gCost[start] = 0;
+		open.Enqueue(start, GetHeuristic(start, goal));
 
-        Hashtable hCost = new Hashtable();
+		while (open.Count > 0)
+		{
+			var room = open.Dequeue();
 
-        PriorityQueue<(int row, int col), double> open = new PriorityQueue<(int row, int col), double>();
+			if (room == goal)
+			{
+				return ReconstructPath(cameFrom, room);
+			}
 
-        path.Add(start, null);
+			foreach(var adj in GetAdjacents(room.row, room.col))
+			{
+				int newCost = gCost[room] + 1;
 
-        gCost.Add(start, 0.0);
+				if (!gCost.TryGetValue(adj, out int oldCost) || newCost < oldCost)
+				{
+					cameFrom[adj] = room;
+					gCost[adj] = newCost;
 
-        hCost.Add(start, 0.0 + GetHeuristic(start, goal));
+					int fCost = newCost + GetHeuristic(adj, goal);
+					open.Enqueue(adj, fCost);
+				}
+			}
+		}
 
-        open.Enqueue(start, 0.0);
-
-        while (open.Count != 0 && open is not null)
-        {
-
-            (int row, int col) n = ((int row, int col))open.Dequeue();
-
-            if (n.row == goal.row && n.col == goal.col)
-            {
-				List<(int row, int col)> p = path.Keys.OfType<(int row, int col)>().ToList();
-                return p;
-            }
-            else
-            {
-                foreach ((int row, int col) a in GetAdjacents(n.row, n.col))
-                {
-                    double oldCost = (double)gCost[a];
-
-                    double newCost = (double)gCost[n] + 1;
-
-                    if (oldCost == null || newCost < oldCost)
-                    {
-                        path.Add(a, n);
-
-                        gCost.Add(a, newCost);
-
-                        hCost.Add(a, newCost + GetHeuristic(a, goal));
-						
-                        open.Remove(a);
-
-                        open.Enqueue(a, newCost);
-                    }
-                }
-            }
-        }
-
-        return null;
+		return new List<(int row, int col)>(); //only occurs if no path is found
     }
 
 	private static int GetHeuristic((int row, int col) a, (int row, int col) b)
